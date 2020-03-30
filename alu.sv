@@ -27,9 +27,11 @@ module alu(input logic [31:0] a, b,
 	values_for_D0to2 n3(A, BB, S, D0, D1, D2);
 	
 	//Pattern Matching
-	pm n4(A, B, _y);
-	
-	mux_2to1_32bit n5(_y, Sz, F[2], D3);//mux to choose PM or SLT for D3
+	//pm n4(A, B, _y);
+	assign _y = A ^ B;  	
+
+
+	mux_2to1_32bit n5(_y, Sz, F[2], D3);//mux to choose PM or SLT for D3 //it's really XOR instead of PM now
 
 	mux_4to1_32bit n6(D0, D1, D2, D3, F[1:0], Y);
 	assign y = Y; 
