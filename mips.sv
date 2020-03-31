@@ -14,13 +14,17 @@ module mips(input  logic        clk, reset,
                alusrc, regdst, regwrite, jump;
   logic [2:0]  alucontrol;
 
+  /* new variables we declared */
+  logic [1:0] aluExtControl; //gets its value from controller and used in datapath 
+  // added the new variable from above 
   controller c(instr[31:26], instr[5:0], zero,
                memtoreg, memwrite, pcsrc,
                alusrc, regdst, regwrite, jump,
-               alucontrol);
+               alucontrol, aluExtControl);
+  // added the variable mentioned above 
   datapath dp(clk, reset, memtoreg, pcsrc,
               alusrc, regdst, regwrite, jump,
-              alucontrol,
+              alucontrol, aluExtControl,
               zero, pc, instr,
               aluout, writedata, readdata);
 endmodule
@@ -31,7 +35,9 @@ module controller(input  logic [5:0] op, funct,
                   output logic       pcsrc, alusrc,
                   output logic       regdst, regwrite,
                   output logic       jump,
-                  output logic [2:0] alucontrol);
+                  output logic [2:0] alucontrol
+		/* New output variables we added */
+		  output logic [1:0] aluExtControl);
 
   logic [1:0] aluop;
   logic       branch;
@@ -79,6 +85,8 @@ module maindec(input  logic [5:0] op,
       6'b001000: controls = 9'b101000000; //ADDI
       6'b000010: controls = 9'b000000100; //J
       6'b001101: controls = 9'b101000011; //ORI
+      6'b001111: controls = 9'b100000000; /*LUI, aluop is don't care, but I'm making it 00 so it'll default to add in alu (adder result is discarded) */
+					/* alusrc is also don't care now, but making it 0 for reasons */
       default:   controls = 9'bxxxxxxxxx; //???
     endcase
 endmodule
@@ -99,7 +107,9 @@ module aludec(input  logic [5:0] funct,
           6'b100100: alucontrol = 3'b000; // AND
           6'b100101: alucontrol = 3'b001; // OR
           6'b101010: alucontrol = 3'b111; // SLT
-	  6'b100110: alucontrol = 3'b011; // now this is XOR 
+	  6'b101011: alucontrol = 3'b000; // SLTU, same comment as for SLL
+	  6'b100110: alucontrol = 3'b011; // XOR
+	  6'b000000: alucontrol = 3'b000; // SLL, it's really 3'bxxx, but I didn't want it to conflict with the default 
           default:   alucontrol = 3'bxxx; // ???
         endcase
     endcase
@@ -110,6 +120,9 @@ module datapath(input  logic        clk, reset,
                 input  logic        alusrc, regdst,
                 input  logic        regwrite, jump,
                 input  logic [2:0]  alucontrol,
+		input logic [1:0] aluExtCtrl, /* This new variable is used to control the 4-to-1 mux mentioned in the notes */
+		//might need to make the variables below internal
+		//input logic [31:0] sltu, lui, sll; /* results of the new modules defined later; they'll be computed in the main mips module */
                 output logic        zero,
                 output logic [31:0] pc,
                 input  logic [31:0] instr,
@@ -121,6 +134,11 @@ module datapath(input  logic        clk, reset,
   logic [31:0] signimm, signimmsh;
   logic [31:0] srca, srcb;
   logic [31:0] result;
+  /*new variables we declared */
+  logic [31:0] upperMuxOut, lowerMuxOut; //used for the 4-to-1 mux as intermediates
+  logic [31:0] sltu, lui, sll; /* results of the new modules defined later; they'll be computed using the new modules */
+  logic [31:0] aluExt
+  /* aluExt is basically the output of the mux mentioned in the comments after this module */
 
   // next PC logic
   flopr #(32) pcreg(clk, reset, pcnext, pc);
@@ -136,15 +154,32 @@ module datapath(input  logic        clk, reset,
                  instr[20:16], writereg,
                  result, srca, writedata);
   mux2 #(5)   wrmux(instr[20:16], instr[15:11], regdst, writereg);
-  mux2 #(32)  resmux(aluout, readdata, memtoreg, result);
+  //This mux below had its first parameter changed from the sample code
+  mux2 #(32)  resmux(/*aluout*/aluExt, readdata, memtoreg, result);
   signext     se(instr[15:0], signimm);
 
   // ALU logic
   mux2 #(32)  srcbmux(writedata, signimm, alusrc, srcb);
   alu         alu(.a(srca), .b(srcb), .f(alucontrol), .y(aluout), .zero(zero));
+  /* New code that uses the new modules defined after this */ 
+  magComparator SLTU(srca, srcb, sltu );
+  loadUpImm LUI(instr[15:0], lui);
+  leftShifter SLL( srcb, instr[10:6], sll );  
+  /* 
+    New code we added for aluExt, which is just a 4-to-1 mux in the data path
+    The syntax that we've chosen means that 
+      - 00 is all the previous instructions plus xor
+      - 01 is sltu
+      - 10 is lui
+      - 11 is sll 
+  */
+  assign upperMuxOut = aluExtCtrl[0] ? sltu : aluout;
+  assign lowerMuxOut = aluExtCtrl[0] ? lui : sll;
+  assign aluExt = aluExtCtrl[1] ? lowerMuxOut : upperMuxOut; 
+   
 endmodule
 
-/* Notes for above, where we incorporated the instructions of part C into the sample code:
+/* Notes for changes in the data path module:
 
   The XOR instruction was just added to old ALU, and it just uses the old data path of 
   R-type instructions. The only change is that now it generates signal for alucontrol 
@@ -155,7 +190,8 @@ endmodule
   This entails sending the old aluout to a mux along with the outputs of the new instructions,
   and replacing aluout with the output of this mux.
     - For the mux's control signal, it'll specifically allow the new instructions when they're
-      needed, but otherwise, let the old instructions through (basically, easier case statements). 
+      needed, but otherwise, let the old instructions through (basically, easier case statements).
+    - This mux's control signal will come from the controller
 
 */
 
@@ -370,7 +406,7 @@ endmodule
 
   Inputs:
   * reg_t, the value to be shifted
-  * shift, the number of bits for the value to be shifted
+  * shift, the unsigned number of bits for the value to be shifted
   
   Outputs: 
   * reg_d, where the shifted value is stored 
@@ -394,5 +430,5 @@ endmodule
 
 module loadUpImm(input logic[15:0] imm,
 		output logic[31:0] reg_t);
-
+  assign reg_t = { imm, 16'b0 }; 
 endmodule
