@@ -35,7 +35,7 @@ module controller(input  logic [5:0] op, funct,
                   output logic       pcsrc, alusrc,
                   output logic       regdst, regwrite,
                   output logic       jump,
-                  output logic [2:0] alucontrol
+                  output logic [2:0] alucontrol,
 		/* New output variables we added */
 		  output logic [1:0] aluExtControl);
 
@@ -153,7 +153,8 @@ module datapath(input  logic        clk, reset,
   /*new variables we declared */
   logic [31:0] upperMuxOut, lowerMuxOut; //used for the 4-to-1 mux as intermediates
   logic [31:0] sltu, lui, sll; /* results of the new modules defined later; they'll be computed using the new modules */
-  logic [31:0] aluExt
+  logic [31:0] zeroExtImm, extImm; /* used to get the correct imm value with proper extension */ 
+  logic [31:0] aluExt; 
   /* aluExt is basically the output of the mux mentioned in the comments after this module */
 
   // next PC logic
@@ -174,8 +175,13 @@ module datapath(input  logic        clk, reset,
   mux2 #(32)  resmux(/*aluout*/aluExt, readdata, memtoreg, result);
   signext     se(instr[15:0], signimm);
 
+  /* New Code here to get imm with zero extension for ORI */
+  zeroExtImm = { 16'b0, instr[15:0] };
+  extImm = ( instr[31:26] == 6'b001101 ) ? zeroExtImm : signimm
+
   // ALU logic
-  mux2 #(32)  srcbmux(writedata, signimm, alusrc, srcb);
+  /* replaced code in the mux below */
+  mux2 #(32)  srcbmux(writedata, extImm/*signimm*/, alusrc, srcb);
   alu         alu(.a(srca), .b(srcb), .f(alucontrol), .y(aluout), .zero(zero));
   /* New code that uses the new modules defined after this */ 
   magComparator SLTU(srca, srcb, sltu );
