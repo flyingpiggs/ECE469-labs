@@ -419,6 +419,7 @@ endmodule
   This module is used for sll. It takes whatever is in reg_t, 
   shifts the value by <shift> number of bits, and stores the 
   result in reg_d.
+    - Zeroes are shifted in
 
   Inputs:
   * reg_t, the value to be shifted
@@ -431,6 +432,44 @@ endmodule
 module leftShifter(input logic[31:0] reg_t,
 			input logic[4:0] shift,
 			output logic[31:0] reg_d);
+  /* shifting to the left means that the input value is trimmed at MSB */
+  always_comb begin 
+    case( shift ) 
+      5'b00000: 	reg_d = reg_t; 
+      5'b00001: 	reg_d = { reg_t[30:0], 1'b0 };
+      5'b00010: 	reg_d = { reg_t[29:0], 2'b0 };
+      5'b00011: 	reg_d = { reg_t[28:0], 3'b0 };
+      5'b00100: 	reg_d = { reg_t[27:0], 4'b0 };
+      5'b00101: 	reg_d = { reg_t[26:0], 5'b0 };
+      5'b00110: 	reg_d = { reg_t[25:0], 6'b0 };
+      5'b00111: 	reg_d = { reg_t[24:0], 7'b0 };
+      5'b01000: 	reg_d = { reg_t[23:0], 8'b0 };
+      5'b01001: 	reg_d = { reg_t[22:0], 9'b0 };
+      5'b01010: 	reg_d = { reg_t[21:0], 10'b0 };
+      5'b01011: 	reg_d = { reg_t[20:0], 11'b0 };
+      5'b01100: 	reg_d = { reg_t[19:0], 12'b0 };
+      5'b01101: 	reg_d = { reg_t[18:0], 13'b0 };
+      5'b01110: 	reg_d = { reg_t[17:0], 14'b0 };
+      5'b01111: 	reg_d = { reg_t[16:0], 15'b0 }; 
+      5'b10000: 	reg_d = { reg_t[15:0], 16'b0 };
+      5'b10001: 	reg_d = { reg_t[14:0], 17'b0 };
+      5'b10010: 	reg_d = { reg_t[13:0], 18'b0 };
+      5'b10011: 	reg_d = { reg_t[12:0], 19'b0 };
+      5'b10100: 	reg_d = { reg_t[11:0], 20'b0 };
+      5'b10101: 	reg_d = { reg_t[10:0], 21'b0 };
+      5'b10110: 	reg_d = { reg_t[9:0], 22'b0 };
+      5'b10111: 	reg_d = { reg_t[8:0], 23'b0 };
+      5'b11000: 	reg_d = { reg_t[7:0], 24'b0 };
+      5'b11001: 	reg_d = { reg_t[6:0], 25'b0 };
+      5'b11010: 	reg_d = { reg_t[5:0], 26'b0 };
+      5'b11011: 	reg_d = { reg_t[4:0], 27'b0 };
+      5'b11100: 	reg_d = { reg_t[3:0], 28'b0 };
+      5'b11101: 	reg_d = { reg_t[2:0], 29'b0 };
+      5'b11110: 	reg_d = { reg_t[1:0], 30'b0 };
+      5'b11111: 	reg_d = { reg_t[0], 31'b0 };
+    endcase
+  end
+
 endmodule
 
 /*
