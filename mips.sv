@@ -46,6 +46,22 @@ module controller(input  logic [5:0] op, funct,
   logic bne;
   assign bne = ( op == 6'b000101 ) ? 1 : 0; 
 
+  /* New code that sets aluExtControl*/ 
+  always_comb begin
+    if ( op == 6'b001111 ) //lui
+      aluExtControl = 2'b10;
+    else if ( op == 6'b000000 ) begin //sll and sltu are both r-types
+        if ( funct == 6'b000000 ) //sll
+          aluExtControl = 2'b11;
+        else if ( funct == 6'b101011 ) //sltu
+          aluExtControl = 2'b01;
+        else //any other r-type, which we didn't add support for in part C
+          aluExtControl = 2'b00; 
+      end
+    else /*this means it's an i-type or j-type instruction; lui is the only i-type instruction we added support for in part C */
+      aluExtControl = 2'b00;    
+  end
+
   maindec md(op, memtoreg, memwrite, branch,
              alusrc, regdst, regwrite, jump,
              aluop);
