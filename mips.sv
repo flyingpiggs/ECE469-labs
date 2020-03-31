@@ -177,7 +177,7 @@ module datapath(input  logic        clk, reset,
 
   /* New Code here to get imm with zero extension for ORI */
   assign zeroExtImm = { 16'b0, instr[15:0] };
-  assign extImm = ( instr[31:26] == 6'b001101 ) ? zeroExtImm : signimm
+  assign extImm = ( instr[31:26] == 6'b001101 ) ? zeroExtImm : signimm; 
 
   // ALU logic
   /* replaced code in the mux below */
