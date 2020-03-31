@@ -83,6 +83,7 @@ module maindec(input  logic [5:0] op,
     endcase
 endmodule
 
+//this module will not be relevant for the SLTU, LUI, and SLL instructions
 module aludec(input  logic [5:0] funct,
               input  logic [1:0] aluop,
               output logic [2:0] alucontrol);
@@ -98,6 +99,7 @@ module aludec(input  logic [5:0] funct,
           6'b100100: alucontrol = 3'b000; // AND
           6'b100101: alucontrol = 3'b001; // OR
           6'b101010: alucontrol = 3'b111; // SLT
+	  6'b100110: alucontrol = 3'b011; // now this is XOR 
           default:   alucontrol = 3'bxxx; // ???
         endcase
     endcase
@@ -142,3 +144,255 @@ module datapath(input  logic        clk, reset,
   alu         alu(.a(srca), .b(srcb), .f(alucontrol), .y(aluout), .zero(zero));
 endmodule
 
+/* Notes for above, where we incorporated the instructions of part C into the sample code:
+
+  The XOR instruction was just added to old ALU, and it just uses the old data path of 
+  R-type instructions. The only change is that now it generates signal for alucontrol 
+  that is different from the others. 
+
+  For the other three instructions of part C, it's less work to just make them their 
+  own modules and control the signal at a 4-to-1 mux for what aluout is in the sample code. 
+  This entails sending the old aluout to a mux along with the outputs of the new instructions,
+  and replacing aluout with the output of this mux.
+    - For the mux's control signal, it'll specifically allow the new instructions when they're
+      needed, but otherwise, let the old instructions through (basically, easier case statements). 
+
+*/
+
+/*
+  This module is for sltu; it's basically a magnitude comparsion which is done
+  by using a priority encoder to determine which bit differs first. 
+  * The inputs are the contents of two registers
+  * The output is that assuming the registers are unsigned integers
+	- result = 1; when a  is less than b
+	- result = 0; when a is greater than or equal to b
+	- result is kept to be 32 bits even though it's just one bit 
+	  to maintain data path structure
+*/
+module magComparator(input logic [31:0] a, b,
+			output logic [31:0] result); 
+  logic[4:0] index; //tells us which index a and b differ first at, starting at MSB
+  logic isEqual; //being used as the control signal of a mux
+  logic valueAtIndex, valueAtIndexNot; 
+  logic[31:0] diffBits;
+
+  assign diffBits = a ^ b; 
+   
+  priorityEncoder_32to5 getIndex( diffBits, index, isEqual ); 
+  
+  always_comb begin
+    if ( isEqual ) 	result = 0; 
+    else begin
+      case( index )
+        5'b00000: 	result = {31'b0, ~a[0]};
+        5'b00001: 	result = {31'b0, ~a[1]};
+        5'b00010: 	result = {31'b0, ~a[2]};
+        5'b00011: 	result = {31'b0, ~a[3]};
+        5'b00100: 	result = {31'b0, ~a[4]};
+        5'b00101: 	result = {31'b0, ~a[5]};
+        5'b00110: 	result = {31'b0, ~a[6]};
+        5'b00111: 	result = {31'b0, ~a[7]};
+        5'b01000: 	result = {31'b0, ~a[8]};
+        5'b01001: 	result = {31'b0, ~a[9]};
+        5'b01010: 	result = {31'b0, ~a[10]};
+        5'b01011: 	result = {31'b0, ~a[11]};
+        5'b01100: 	result = {31'b0, ~a[12]};
+        5'b01101: 	result = {31'b0, ~a[13]};
+        5'b01110: 	result = {31'b0, ~a[14]};
+        5'b01111: 	result = {31'b0, ~a[15]};
+        5'b10000: 	result = {31'b0, ~a[16]};
+        5'b10001: 	result = {31'b0, ~a[17]};
+        5'b10010: 	result = {31'b0, ~a[18]};
+        5'b10011: 	result = {31'b0, ~a[19]};
+        5'b10100: 	result = {31'b0, ~a[20]};
+        5'b10101: 	result = {31'b0, ~a[21]};
+        5'b10110: 	result = {31'b0, ~a[22]};
+        5'b10111: 	result = {31'b0, ~a[23]};
+        5'b11000: 	result = {31'b0, ~a[24]};
+        5'b11001: 	result = {31'b0, ~a[25]};
+        5'b11010: 	result = {31'b0, ~a[26]};
+        5'b11011: 	result = {31'b0, ~a[27]};
+        5'b11100: 	result = {31'b0, ~a[28]};
+        5'b11101: 	result = {31'b0, ~a[29]};
+        5'b11110: 	result = {31'b0, ~a[30]};
+        5'b11111: 	result = {31'b0, ~a[31]};
+      endcase 
+    end 
+  end 
+
+endmodule
+
+module priorityEncoder_32to5( input logic[31:0] A,
+				output logic[4:0] Y,
+				output logic isEqual);
+  //this block starts the priority encoder portion
+  always_comb begin
+    if (A[31]) begin
+      Y = 5'b11111;
+      isEqual = 0; 
+      end
+    else if (A[30]) begin
+      Y = 5'b11110;
+      isEqual = 0; 
+      end
+    else if (A[29]) begin
+      Y = 5'b11101;
+      isEqual = 0; 
+      end
+    else if (A[28]) begin
+      Y = 5'b11100;
+      isEqual = 0; 
+      end
+    else if (A[27]) begin
+      Y = 5'b11011;
+      isEqual = 0; 
+      end
+    else if (A[26]) begin
+      Y = 5'b11010;
+      isEqual = 0; 
+      end
+    else if (A[25]) begin
+      Y = 5'b11001;
+      isEqual = 0; 
+      end
+    else if (A[24]) begin
+      Y = 5'b11000;
+      isEqual = 0; 
+      end
+    else if (A[23]) begin
+      Y = 5'b10111;
+      isEqual = 0; 
+      end
+    else if (A[22]) begin
+      Y = 5'b10110;
+      isEqual = 0; 
+      end
+    else if (A[21]) begin
+      Y = 5'b10101;
+      isEqual = 0; 
+      end
+    else if (A[20]) begin
+      Y = 5'b10100;
+      isEqual = 0; 
+      end
+    else if (A[19]) begin
+      Y = 5'b10011;
+      isEqual = 0; 
+      end
+    else if (A[18]) begin
+      Y = 5'b10010;
+      isEqual = 0; 
+      end
+    else if (A[17]) begin
+      Y = 5'b10001;
+      isEqual = 0; 
+      end
+    else if (A[16]) begin
+      Y = 5'b10000;
+      isEqual = 0; 
+      end
+    else if (A[15]) begin
+      Y = 5'b01111;
+      isEqual = 0; 
+      end
+    else if (A[14]) begin
+      Y = 5'b01110;
+      isEqual = 0; 
+      end
+    else if (A[13]) begin
+      Y = 5'b01101;
+      isEqual = 0; 
+      end
+    else if (A[12]) begin
+      Y = 5'b01100;
+      isEqual = 0; 
+      end
+    else if (A[11]) begin
+      Y = 5'b01011;
+      isEqual = 0; 
+      end
+    else if (A[10]) begin
+      Y = 5'b01010;
+      isEqual = 0; 
+      end
+    else if (A[9]) begin
+      Y = 5'b01001;
+      isEqual = 0; 
+      end
+    else if (A[8]) begin
+      Y = 5'b01000;
+      isEqual = 0; 
+      end
+    else if (A[7]) begin
+      Y = 5'b00111;
+      isEqual = 0; 
+      end
+    else if (A[6]) begin
+      Y = 5'b00110;
+      isEqual = 0; 
+      end
+    else if (A[5]) begin
+      Y = 5'b00101;
+      isEqual = 0; 
+      end
+    else if (A[4]) begin
+      Y = 5'b00100;
+      isEqual = 0; 
+      end
+    else if (A[3]) begin
+      Y = 5'b00011;
+      isEqual = 0; 
+      end
+    else if (A[2]) begin
+      Y = 5'b00010;
+      isEqual = 0; 
+      end
+    else if (A[1]) begin
+      Y = 5'b00001;
+      isEqual = 0; 
+      end
+    else if (A[0]) begin
+      Y = 5'b00000;
+      isEqual = 0; 
+      end
+    else  begin
+      Y = 5'b00000; //doesn't really matter, it's really 5bxxxxx
+      isEqual = 1; 
+      end
+  end
+  //end of the priority encoder
+endmodule
+
+/*
+  This module is used for sll. It takes whatever is in reg_t, 
+  shifts the value by <shift> number of bits, and stores the 
+  result in reg_d.
+
+  Inputs:
+  * reg_t, the value to be shifted
+  * shift, the number of bits for the value to be shifted
+  
+  Outputs: 
+  * reg_d, where the shifted value is stored 
+*/
+
+module leftShifter(input logic[31:0] reg_t,
+			input logic[4:0] shift,
+			output logic[31:0] reg_d);
+endmodule
+
+/*
+  This module is used for lui, which stands for load upper immediate.
+  It takes the value indicates by <imm>, then shifts it 16 bits, and
+  stores the value in register_t. 
+  
+  Inputs: 
+  * imm, 16 bits, the value to be shifted to the left by 16 bits
+  Output:
+  * reg_t, 32 bits, where the shifted value is stored
+*/
+
+module loadUpImm(input logic[15:0] imm,
+		output logic[31:0] reg_t);
+
+endmodule
