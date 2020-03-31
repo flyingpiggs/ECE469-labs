@@ -196,7 +196,7 @@ module datapath(input  logic        clk, reset,
       - 11 is sll 
   */
   assign upperMuxOut = aluExtCtrl[0] ? sltu : aluout;
-  assign lowerMuxOut = aluExtCtrl[0] ? lui : sll;
+  assign lowerMuxOut = aluExtCtrl[0] ? sll : lui; //here
   assign aluExt = aluExtCtrl[1] ? lowerMuxOut : upperMuxOut; 
    
 endmodule
