@@ -36,3 +36,20 @@ module cam(
 
 
 endmodule
+
+module HammingWeight_8bit( input logic[7:0] value,
+			   output logic[3:0] count );
+	logic[1:0] level1LeftLeft, level1MidLeft, level1MidRight, level1RightRight;
+	logic[2:0] level2Left, level2Right;
+	
+	assign level1LeftLeft = value[7] + value[6];
+	assign level1MidLeft = value[5] + value[4];
+	assign level1MidRight = value[3] + value[2];
+	assign level1RightRight = value[1] + value[0];
+
+	assign level2Left = level1LeftLeft + level1MidLeft; 
+	assign level2Right = level1MidRight + level1RightRight;
+
+	assign count = level2Left + level2Right;
+
+endmodule 
