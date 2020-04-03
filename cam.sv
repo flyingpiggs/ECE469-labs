@@ -52,4 +52,48 @@ module HammingWeight_8bit( input logic[7:0] value,
 
 	assign count = level2Left + level2Right;
 
-endmodule 
+endmodule
+
+module PriorityEncoder_8bit( input logic[7:0] value,
+			output logic[2:0] index,
+			output logic error );
+	always_comb begin
+		if( value[7] ) begin
+			index = 3'b111;
+			error = 0;
+		end  
+		else if( value[6] ) begin
+			index = 3'b110;
+			error = 0;
+		end  
+		else if( value[5] ) begin
+			index = 3'b101;
+			error = 0;
+		end  
+		else if( value[4] ) begin
+			index = 3'b100;
+			error = 0;
+		end  
+		else if( value[3] ) begin
+			index = 3'b011;
+			error = 0;
+		end  
+		else if( value[2] ) begin
+			index = 3'b010;
+			error = 0;
+		end  
+		else if( value[1] ) begin
+			index = 3'b001;
+			error = 0;
+		end  
+		else if( value[0] ) begin
+			index = 3'b000;
+			error = 0;
+		end
+		else begin /* this condition means that value == 0 */
+			index = 0;
+			error = 1;
+		end
+	end
+
+endmodule
