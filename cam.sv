@@ -4,11 +4,29 @@ module cam(
 	input logic [1:0] init, 
 	output logic [2:0] addr,
 	output logic valid,
-	output logic num_match);
+	output logic[3:0] num_match);
 
+	logic isZero;
+	logic [2:0] index; 
+	logic [3:0] count; 
 	logic [15:0] RF[2:0]; //16-bit registers; 3 bits to have up to 8 registers
 
-	always_ff@(posedge clk, posedge init) //init is acting as an asynchronous reset signal
+	logic [7:0] compResult;
+	assign compResult[0] = RF[0] == data_lookup;
+	assign compResult[1] = RF[1] == data_lookup;
+	assign compResult[2] = RF[2] == data_lookup;
+	assign compResult[3] = RF[3] == data_lookup;
+	assign compResult[4] = RF[4] == data_lookup;
+	assign compResult[5] = RF[5] == data_lookup;
+	assign compResult[6] = RF[6] == data_lookup;
+	assign compResult[7] = RF[7] == data_lookup;
+
+
+	HammingWeight_8bit countOnes( compResult, count );
+	PriorityEncoder_8bit( compResult, index, isZero ); 
+	
+
+	always_ff@(posedge clk, posedge init) begin //init is acting as an asynchronous reset signal
 		case(init)
 			2'b11:	begin
 				RF[0]<=16'b0000000000000000;
@@ -34,6 +52,11 @@ module cam(
 				RF[7]<=RF[7];	
 				end	
 		endcase
+		valid <= ~isZero;
+		num_match <= count; 
+		addr <= index; 
+		 
+	end
 endmodule
 
 module HammingWeight_8bit( input logic[7:0] value,
