@@ -8,7 +8,7 @@ module cam(
 
 	logic [15:0] RF[2:0]; //16-bit registers; 3 bits to have up to 8 registers
 
-	always_ff@(clk, init); //init is acting as an asynchronous reset signal
+	always_ff@(posedge clk, posedge init) //init is acting as an asynchronous reset signal
 		case(init)
 			2'b11:	begin
 				RF[0]<=16'b0000000000000000;
@@ -24,17 +24,16 @@ module cam(
 			2'b01:
 			2'b00:*/
 			default: begin
-				RF[0]<=R[0];
-				RF[1]<=R[1];
-				RF[2]<=R[2];
-				RF[3]<=R[3];
-				RF[4]<=R[4];
-				RF[5]<=R[5];
-				RF[6]<=R[6];
-				RF[7]<=R[7];	
+				RF[0]<=RF[0];
+				RF[1]<=RF[1];
+				RF[2]<=RF[2];
+				RF[3]<=RF[3];
+				RF[4]<=RF[4];
+				RF[5]<=RF[5];
+				RF[6]<=RF[6];
+				RF[7]<=RF[7];	
 				end	
-
-
+		endcase
 endmodule
 
 module HammingWeight_8bit( input logic[7:0] value,
