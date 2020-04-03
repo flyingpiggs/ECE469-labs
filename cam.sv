@@ -8,7 +8,7 @@ module cam(
 
 	logic [15:0] RF[2:0]; //16-bit registers; 3 bits to have up to 8 registers
 
-	always_ff@(clk, init); //init is acting as the reset signal
+	always_ff@(clk, init); //init is acting as an asynchronous reset signal
 		case(init)
 			2'b11:	begin
 				RF[0]<=16'b0000000000000000;
@@ -20,9 +20,19 @@ module cam(
 				RF[6]<=16'b0000000000000110;
 				RF[7]<=16'b0000000000000111;
 				end
-			2'b10:
+			/*2'b10:
 			2'b01:
-			2'b00:
+			2'b00:*/
+			default: begin
+				RF[0]<=R[0];
+				RF[1]<=R[1];
+				RF[2]<=R[2];
+				RF[3]<=R[3];
+				RF[4]<=R[4];
+				RF[5]<=R[5];
+				RF[6]<=R[6];
+				RF[7]<=R[7];	
+				end	
 
 
 endmodule
