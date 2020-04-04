@@ -9,7 +9,7 @@ module cam(
 	logic isZero;
 	logic [2:0] index; 
 	logic [3:0] count; 
-	logic [15:0] RF[2:0]; //16-bit registers; 3 bits to have up to 8 registers
+	logic [15:0] RF[7:0]; //16-bit registers; 3 bits to have up to 8 registers
 
 	logic [7:0] compResult;
 	assign compResult[0] = RF[0] == data_lookup;
