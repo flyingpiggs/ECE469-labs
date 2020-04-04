@@ -1,18 +1,25 @@
-module testbench_HammingWeight();
+module testbench_cam();
 
-	logic[7:0] value;
-	logic[3:0] count; 
-	HammingWeight_8bit duts( value, count );
+	logic clk;
+	logic [15:0] data_lookup;
+	logic [1:0] init;
+	logic [2:0] addr;
+	logic valid;
+	logic [3:0] num_match;
+
+	cam dut(clk, data_lookup, init, addr, valid, num_match);
+
+	always begin
+		clk<=1;#5;
+		clk<=0;#5;
+	end
 
 	initial begin
-		value = 8'b00000000; #10;
-		value = 8'b00000001; #10;
-		value = 8'b00000011; #10;
-		value = 8'b00000111; #10;
-		value = 8'b00001111; #10;
-		value = 8'b00011111; #10;
-		value = 8'b00111111; #10;
-		value = 8'b01111111; #10;
-		value = 8'b11111111; #10;
-	end  
-endmodule 
+		init = 2'b11; data_lookup = 16'b0; #10;
+		/*init = 0;*/ data_lookup = 16'b11; #10;
+		data_lookup = 16'b100; #10;
+		data_lookup = 16'b11110000; #10;
+		data_lookup = 16'b0; #10;
+	end
+endmodule
+		
