@@ -9,7 +9,7 @@ module cam(
 	logic isZero;
 	logic [2:0] index; 
 	logic [3:0] count; 
-	logic [15:0] RF[7:0]; //16-bit registers; 3 bits to have up to 8 registers
+	logic [15:0] RF[7:0]; //16-bit registers; Up to 8 registers
 
 	logic [7:0] compResult;
 	assign compResult[0] = RF[0] == data_lookup;
@@ -28,7 +28,7 @@ module cam(
 
 	always_ff@(posedge clk, posedge init) begin //init is acting as an asynchronous reset signal
 		case(init)
-			2'b11:	begin
+			2'b11:	begin //init = 3
 				RF[0]<=16'b0000000000000000;
 				RF[1]<=16'b0000000000000001;
 				RF[2]<=16'b0000000000000010;
@@ -38,10 +38,28 @@ module cam(
 				RF[6]<=16'b0000000000000110;
 				RF[7]<=16'b0000000000000111;
 				end
-			/*2'b10:
-			2'b01:
-			2'b00:*/
-			default: begin
+			2'b10:	begin //init = 2
+				RF[0]<=16'b0000000000000000;
+				RF[1]<=16'b1111111111111111;
+				RF[2]<=16'b1111111111111110;
+				RF[3]<=16'b1111111111111101;
+				RF[4]<=16'b1111111111111100;
+				RF[5]<=16'b1111111111111011;
+				RF[6]<=16'b1111111111111010;
+				RF[7]<=16'b1111111111111001;
+				end
+			2'b01:	begin //init = 1
+				RF[0]<=16'b0000000000000001;
+				RF[1]<=16'b0000000000000001;
+				RF[2]<=16'b0000000000000011;
+				RF[3]<=16'b0000000000000011;
+				RF[4]<=16'b0000000000000101;
+				RF[5]<=16'b0000000000000101;
+				RF[6]<=16'b0000000000000111;
+				RF[7]<=16'b0000000000000111;
+				end
+			//2'b00:
+			default: begin //default takes care of init = 0
 				RF[0]<=RF[0];
 				RF[1]<=RF[1];
 				RF[2]<=RF[2];
@@ -52,11 +70,17 @@ module cam(
 				RF[7]<=RF[7];	
 				end	
 		endcase
-		valid <= ~isZero;
+		/*valid <= ~isZero;
 		num_match <= count; 
-		addr <= index; 
+		addr <= index; */
 		 
 	end
+	always_comb
+		begin
+		valid = ~isZero;
+		num_match = count; 
+		addr = index; 
+		end
 endmodule
 
 module HammingWeight_8bit( input logic[7:0] value,
