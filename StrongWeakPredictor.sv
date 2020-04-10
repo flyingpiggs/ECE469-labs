@@ -1,3 +1,5 @@
+/* Sample code for 2 bit Strong/Weak Predictor */
+
 module pattern_predictor_2bit ( input logic clk, reset, actual_pattern,
 				output logic predicted_pattern);
 
