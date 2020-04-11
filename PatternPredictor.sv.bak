@@ -37,7 +37,7 @@ typedef enum logic [2:0] { P1_1, P1_2, P1_3, P1_4, P0_1, P0_2, P0_3, P0_4 } Stat
 StateType state, nextState; 
 
 always_ff @( posedge clk, posedge reset)
-    if (reset) state <= P1_1; 
+    if (reset) state <= P1_2; 
     else state <= nextState; 
 
 //state logic
