@@ -19,11 +19,23 @@ module PatternPredictor( input logic clk, reset,
   always_ff @( posedge clk, posedge reset ) begin
     if ( reset ) begin
       Z <= 1'bx;
-      Y <= 1'bx; 
+      Y <= 1'bx;
+      X_cnt <= 0; //this may need to be 1?
+      Y_cnt <= 0;
+      Z_cnt <= 0;
     end
     else begin
       Z <= predictZ;
-      Y <= predictY;  
+      Y <= predictY;
+      X_cnt <= X_cnt + 1; 
+      if ( Y_match )
+        Y_cnt <= Y_cnt + 1;
+      else 
+        Y_cnt <= Y_cnt; 
+      if ( Z_match )
+        Z_cnt <= Z_cnt + 1;
+      else 
+        Z_cnt <= Z_cnt; 
     end
   end
      
