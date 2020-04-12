@@ -28,11 +28,11 @@ module PatternPredictor( input logic clk, reset,
       Z <= predictZ;
       Y <= predictY;
       X_cnt <= X_cnt + 1; 
-      if ( Y_match )
+      if ( predictY == X )
         Y_cnt <= Y_cnt + 1;
       else 
         Y_cnt <= Y_cnt; 
-      if ( Z_match )
+      if ( predictZ == X )
         Z_cnt <= Z_cnt + 1;
       else 
         Z_cnt <= Z_cnt; 
