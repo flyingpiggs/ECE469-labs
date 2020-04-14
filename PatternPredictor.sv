@@ -13,32 +13,26 @@ module PatternPredictor( input logic clk, reset,
   pattern_predictor_2bit Z_predictor( clk, reset, X, predictZ ); 
   pattern_predictor_3bit Y_predictor( clk, reset, X, predictY );
 
-  assign Z_match = ( Z == X );
-  assign Y_match = ( Y == X );
-
-  always_ff @( posedge clk, posedge reset ) begin
-    if ( reset ) begin
-      Z <= 1'bx;
-      Y <= 1'bx;
-      X_cnt <= 0; //this may need to be 1?
-      Y_cnt <= 0;
-      Z_cnt <= 0;
-    end
-    else begin
-      Z <= predictZ;
-      Y <= predictY;
-      X_cnt <= X_cnt + 1; 
-      if ( predictY == X )
-        Y_cnt <= Y_cnt + 1;
-      else 
-        Y_cnt <= Y_cnt; 
-      if ( predictZ == X )
-        Z_cnt <= Z_cnt + 1;
-      else 
-        Z_cnt <= Z_cnt; 
-    end
-  end
-     
+  always_ff @ (posedge clk, posedge reset) begin
+		Z_match <= ( predictZ == X );
+		Y_match <= ( predictY == X );
+		Z <= predictZ;
+		Y <= predictY;
+		if(reset) begin
+			X_cnt <= 0;
+			if(predictY == X)	Y_cnt <= 1;
+			else			Y_cnt <= 0;
+			if(predictZ == X)	Z_cnt <= 1;
+			else			Z_cnt <= 0;
+			end
+		else begin
+			X_cnt <= X_cnt + 1;
+			if(predictY == X)	Y_cnt <= Y_cnt + 1;
+			else		Y_cnt <= Y_cnt;
+			if(predictZ == X)	Z_cnt <= Z_cnt + 1;
+			else		Z_cnt <= Z_cnt;
+			end
+	end
 endmodule 
 
 module pattern_predictor_3bit( input logic clk, reset,
