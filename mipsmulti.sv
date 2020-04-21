@@ -28,7 +28,56 @@ module mem(input logic clk, we,
       RAM[a[31:2]] <= wd; 
 endmodule 
 
-module mips(input  logic        clk, reset,             output logic [31:0] adr, writedata,             output logic        memwrite,             input  logic [31:0] readdata);   logic        zero, pcen, irwrite, regwrite,                alusrca, iord, memtoreg, regdst;   logic [1:0]  alusrcb, pcsrc;   logic [2:0]  alucontrol;   logic [5:0]  op, funct;   controller c(clk, reset, op, funct, zero,                pcen, memwrite, irwrite, regwrite,                alusrca, iord, memtoreg, regdst,                alusrcb, pcsrc, alucontrol);   datapath dp(clk, reset,               pcen, irwrite, regwrite,               alusrca, iord, memtoreg, regdst,               alusrcb, pcsrc, alucontrol,               op, funct, zero,               adr, writedata, readdata); endmodule module controller(input  logic       clk, reset,                   input  logic [5:0] op, funct,                   input  logic       zero,                   output logic       pcen, memwrite, irwrite, regwrite,                   output logic       alusrca, iord, memtoreg, regdst,                   output logic [1:0] alusrcb, pcsrc,                   output logic [2:0] alucontrol);   logic [1:0] aluop;   logic       branch, pcwrite;   // Main Decoder and ALU Decoder subunits.   maindec md(clk, reset, op,              pcwrite, memwrite, irwrite, regwrite,              alusrca, branch, iord, memtoreg, regdst,              alusrcb, pcsrc, aluop);   aludec  ad(funct, aluop, alucontrol);   // ADD CODE HERE   // Add combinational logic (i.e. an assign statement)   // to produce the PCEn signal (pcen) from the branch,   // zero, and pcwrite signals endmodule
+module mips(input  logic        clk, reset,
+             output logic [31:0] adr, writedata,
+             output logic        memwrite,
+             input  logic [31:0] readdata);
+
+  logic        zero, pcen, irwrite, regwrite,
+               alusrca, iord, memtoreg, regdst;
+  logic [1:0]  alusrcb, pcsrc;
+  logic [2:0]  alucontrol; 
+  logic [5:0]  op, funct; 
+
+  controller c(clk, reset, op, funct, zero,
+               pcen, memwrite, irwrite, regwrite, 
+               alusrca, iord, memtoreg, regdst, 
+               alusrcb, pcsrc, alucontrol);
+  datapath dp(clk, reset, 
+              pcen, irwrite, regwrite, 
+              alusrca, iord, memtoreg, regdst, 
+              alusrcb, pcsrc, alucontrol, 
+              op, funct, zero, 
+              adr, writedata, readdata); 
+
+endmodule 
+
+module controller(input  logic       clk, reset,
+                  input  logic [5:0] op, funct, 
+                  input  logic       zero, 
+                  output logic       pcen, memwrite, irwrite, regwrite, 
+                  output logic       alusrca, iord, memtoreg, regdst, 
+                  output logic [1:0] alusrcb, pcsrc, 
+                  output logic [2:0] alucontrol); 
+
+  logic [1:0] aluop; 
+  logic       branch, pcwrite;   
+
+  // Main Decoder and ALU Decoder subunits. 
+  maindec md(clk, reset, op, 
+             pcwrite, memwrite, irwrite, regwrite, 
+             alusrca, branch, iord, memtoreg, regdst, 
+             alusrcb, pcsrc, aluop); 
+  aludec  ad(funct, aluop, alucontrol); 
+
+/* 
+  Add combinational logic (i.e. an assign statement) 
+  to produce the PCEn signal (pcen) from the branch,   // zero, and pcwrite signals 
+*/
+
+  /* ADD CODE HERE */  
+ 
+endmodule
 
 module maindec(input  logic       clk, reset,
                 input  logic [5:0] op,
