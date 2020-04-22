@@ -1,3 +1,71 @@
+/*
+
+  Instructions that we need to support 
+
+  add, sub, and, or, slt, lw, sw, beq, addi, j
+
+  ** add ** 
+  Operation:  $d = $s + $t; advance_pc (4);
+  Syntax:     add $d, $s, $t
+  Encoding:   0000 00ss ssst tttt dddd d000 0010 0000 
+
+  ** sub **
+  Operation:  $d = $s - $t; advance_pc (4); 
+  Syntax:     sub $d, $s, $t 
+  Encoding:   0000 00ss ssst tttt dddd d000 0010 0010
+ 
+  ** and **
+  Operation:  $d = $s & $t; advance_pc (4);
+  Syntax:     and $d, $s, $t
+  Encoding:   0000 00ss ssst tttt dddd d000 0010 0100 
+
+  ** or **
+  Operation:  $d = $s | $t; advance_pc (4); 
+  Syntax:     or $d, $s, $t
+  Encoding:   0000 00ss ssst tttt dddd d000 0010 0101
+
+  ** slt ** 
+  Operation:  if $s < $t $d = 1; advance_pc (4); else $d = 0; advance_pc (4);
+  Syntax:     slt $d, $s, $t 
+  Encoding:   0000 00ss ssst tttt dddd d000 0010 1010
+
+  ** lw **
+  Operation:  $t = MEM[$s + offset]; advance_pc (4);  
+  Syntax:     lw $t, offset($s) 
+  Encoding:   1000 11ss ssst tttt iiii iiii iiii iiii 
+  
+  ** sw **
+  Operation:  MEM[$s + offset] = $t; advance_pc (4); 
+  Syntax:     sw $t, offset($s)
+  Encoding:   1010 11ss ssst tttt iiii iiii iiii iiii
+
+  ** beq **
+  Operation:  if $s == $t advance_pc (offset << 2)); else advance_pc (4);
+  Syntax:     beq $s, $t, offset
+  Encoding:   0001 00ss ssst tttt iiii iiii iiii iiii 
+
+  ** bne **
+  Operation:  if $s != $t advance_pc (offset << 2)); else advance_pc (4);
+  Syntax:     beq $s, $t, offset
+  Encoding:   0001 01ss ssst tttt iiii iiii iiii iiii
+
+  ** addi **
+  Operation:  $t = $s + imm; advance_pc (4);
+  Syntax:     addi $t, $s, imm
+  Encoding:   0010 00ss ssst tttt iiii iiii iiii iiii 
+
+  ** ori **
+  Operation:  $t = $s | imm; advance_pc (4);
+  Syntax:     ori $t, $s, imm 
+  Encoding:   0011 01ss ssst tttt iiii iiii iiii iiii
+ 
+  ** j ** 
+  Operation:  PC = nPC; nPC = (PC & 0xf0000000) | (target << 2);
+  Syntax:     j target 
+  Encoding:   0000 10ii iiii iiii iiii iiii iiii iiii
+
+*/
+
 module top(input logic clk, reset,
              output logic [31:0] writedata, adr,
              output logic        memwrite);
