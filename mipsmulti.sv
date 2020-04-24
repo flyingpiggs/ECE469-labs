@@ -130,6 +130,7 @@ module controller(input  logic       clk, reset,
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
+  logic branchAndZero;
 
   // Main Decoder and ALU Decoder subunits.
   maindec md(clk, reset, op,
@@ -138,12 +139,8 @@ module controller(input  logic       clk, reset,
              alusrcb, pcsrc, aluop);
   aludec  ad(funct, aluop, alucontrol);
 
-/*
-  Add combinational logic (i.e. an assign statement)
-  to produce the PCEn signal (pcen) from the branch,   // zero, and pcwrite signals
-*/
-
-  /* ADD CODE HERE */
+  assign branchAndZero = branch & zero;
+  assign pcen = pcwrite | branchAndZero;
 
 endmodule
 
