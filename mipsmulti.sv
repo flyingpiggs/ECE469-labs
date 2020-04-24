@@ -126,14 +126,15 @@ module controller(input  logic       clk, reset,
                   output logic       pcen, memwrite, irwrite, regwrite,
                   output logic       alusrca, iord, memtoreg, regdst,
                   output logic [1:0] alusrcb, pcsrc,
-                  output logic [2:0] alucontrol);
+                  output logic [2:0] alucontrol,
+		  output logic [3:0] state/*ADDED*/);
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
   logic branchAndZero;
 
   // Main Decoder and ALU Decoder subunits.
-  maindec md(clk, reset, op,
+  maindec md(clk, reset, op, state/*ADDED*/,
              pcwrite, memwrite, irwrite, regwrite,
              alusrca, branch, iord, memtoreg, regdst,
              alusrcb, pcsrc, aluop);
@@ -149,7 +150,8 @@ module maindec(input  logic       clk, reset,
                 output logic       pcwrite, memwrite, irwrite, regwrite,
                 output logic       alusrca, branch, iord, memtoreg, regdst,
                 output logic [1:0] alusrcb, pcsrc,
-                output logic [1:0] aluop);
+                output logic [1:0] aluop,
+		output logic [3:0] state_out);
   /* States */
   parameter   FETCH   = 4'b0000;      // State 0
   parameter   DECODE  = 4'b0001;      // State 1
@@ -244,6 +246,8 @@ module maindec(input  logic       clk, reset,
       JEX:      controls = 15'h4008;
       default:  controls = 15'hxxxx; // should never happen
     endcase
+//ADDED
+assign state_out = state;
 endmodule
 
 module aludec(input  logic [5:0] funct,
@@ -330,8 +334,8 @@ logic [31:0] rf[31:0];
 // on falling edge of clk
 always_ff @(posedge clk)
 if (we3) rf[wa3] <= wd3;
-assign rd1 = (ra1 ! = 0) ? rf[ra1] : 0;
-assign rd2 = (ra2 ! = 0) ? rf[ra2] : 0;
+assign rd1 = (ra1 != 0) ? rf[ra1] : 0;
+assign rd2 = (ra2 != 0) ? rf[ra2] : 0;
 endmodule
 //--------------------------------------------------------
 
