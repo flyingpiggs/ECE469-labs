@@ -200,18 +200,23 @@ module maindec(input  logic       clk, reset,
           ADDI:    nextstate = ADDIEX;
           J:       nextstate = JEX;
           default: nextstate = 4'bx; // should never happen
-       endcase
+       	endcase
   /* Add code here  */
       MEMADR:
-      MEMRD:
-      MEMWB:
-      MEMWR:
-      RTYPEEX:
-      RTYPEWB:
-      BEQEX:
-      ADDIEX:
-      ADDIWB:
-      JEX:
+        case(op)
+          LW:       nextstate = MEMRD;
+          SW:       nextstate = MEMWR;
+          default:  nextstate = 4'bx;
+        endcase
+      MEMRD:        nextstate = MEMWB;
+      MEMWB:        nextstate = FETCH;
+      MEMWR:        nextstate = FETCH;
+      RTYPEEX:      nextstate = RTYPEWB;
+      RTYPEWB:      nextstate = FETCH;
+      BEQEX:        nextstate = FETCH;
+      ADDIEX:       nextstate = ADDIWB;
+      ADDIWB:       nextstate = FETCH;
+      JEX:          nextstate = FETCH;
       default:      nextstate = 4'bx; // should never happen
     endcase
 
@@ -226,10 +231,20 @@ module maindec(input  logic       clk, reset,
   */
   always_comb
     case(state)
-      FETCH:   controls = 15'h5010;
-      DECODE:  controls = 15'h0030;
-     /* your code goes here */
-      default: controls = 15'hxxxx; // should never happen
+      FETCH:    controls = 15'h5010;
+      DECODE:   controls = 15'h0030;
+      /* your code goes here */
+      MEMADR:   controls = 15'h0420;
+      MEMRD:    controls = 15'h0100;
+      MEMWB:    controls = 15'h0880;
+      MEMWR:    controls = 15'h2100;
+      RTYPEEX:  controls = 15'h0402;
+      RTYPEWB:  controls = 15'h0840;
+      BEQEX:    controls = 15'h0605;
+      ADDIEX:   controls = 15'h0420;
+      ADDIWB:   controls = 15'h0800;
+      JEX:      controls = 15'h4008;
+      default:  controls = 15'hxxxx; // should never happen
     endcase
 endmodule
 
@@ -301,6 +316,26 @@ module datapath(input  logic        clk, reset,
   /* ADD DATAPATH CODE HERE */
 
 endmodule
+
+//Regfile provided in the textbook------------------------
+module regfile(input logic clk,
+input logic we3,
+input logic [4:0] ra1, ra2, wa3,
+input logic [31:0] wd3,
+output logic [31:0] rd1, rd2);
+logic [31:0] rf[31:0];
+// three ported register file
+// read two ports combinationally
+// write third port on rising edge of clk
+// register 0 hardwired to 0
+// note: for pipelined processor, write third port
+// on falling edge of clk
+always_ff @(posedge clk)
+if (we3) rf[wa3] <= wd3;
+assign rd1 = (ra1 ! = 0) ? rf[ra1] : 0;
+assign rd2 = (ra2 ! = 0) ? rf[ra2] : 0;
+endmodule
+//--------------------------------------------------------
 
 //ALU Portion---------------------------------------------
 module alu(input logic [31:0] a, b,
