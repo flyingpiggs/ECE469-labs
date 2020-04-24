@@ -234,6 +234,7 @@ module maindec(input  logic       clk, reset,
       FETCH:    controls = 15'h5010; 
       DECODE:   controls = 15'h0030;
       /* your code goes here */
+      //The following state controls come from our maindecoder table
       MEMADR:   controls = 15'h0420;
       MEMRD:    controls = 15'h0100;
       MEMWB:    controls = 15'h0880;
