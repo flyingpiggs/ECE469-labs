@@ -110,7 +110,7 @@ module mips(input  logic        clk, reset,
   controller c(clk, reset, op, funct, zero,
                pcen, memwrite, irwrite, regwrite,
                alusrca, iord, memtoreg, regdst,
-               alusrcb, pcsrc, alucontrol);
+               alusrcb, pcsrc, alucontrol);//Will need to be changed since controller instantiations were changed
   datapath dp(clk, reset,
               pcen, irwrite, regwrite,
               alusrca, iord, memtoreg, regdst,
@@ -127,19 +127,25 @@ module controller(input  logic       clk, reset,
                   output logic       alusrca, iord, memtoreg, regdst,
                   output logic [1:0] alusrcb, pcsrc,
                   output logic [2:0] alucontrol,
-		  output logic [3:0] state/*ADDED*/);
+		  output logic [3:0] state/*ADDED*/,
+      output logic pcwrite_out/*ADDED*/,
+      output logic [1:0] aluop_out/*ADDED*/,
+      output logic branch_out/*ADDED*/);
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
   logic branchAndZero;
 
   // Main Decoder and ALU Decoder subunits.
-  maindec md(clk, reset, op, state/*ADDED*/,
+  maindec md(clk, reset, op, 
              pcwrite, memwrite, irwrite, regwrite,
              alusrca, branch, iord, memtoreg, regdst,
-             alusrcb, pcsrc, aluop);
+             alusrcb, pcsrc, aluop, state/*ADDED*/);
   aludec  ad(funct, aluop, alucontrol);
 
+  assign aluop_out = aluop;
+  assign pcwrite_out = pcwrite;/*ADDED*/
+  assign branch_out = branch;
   assign branchAndZero = branch & zero;
   assign pcen = pcwrite | branchAndZero;
 
