@@ -370,7 +370,7 @@ module datapath(input  logic        clk, reset,
 
   mux2 #(5) MuxWriteReg( instr[20:16], instr[15:11], regdst, writereg );
   mux2 #(32) MuxAdr( pc, aluout, iord, adr );
-  mux2 #(32) MuxWd3( aluout, data, memtoreg ,writereg );
+  mux2 #(32) MuxWd3( aluout, data, memtoreg ,wd3/*writereg*/ );
   mux2 #(32) MuxSrcA( pc, tempA, alusrca, srca );
   mux4 #(32) MuxSrcB( tempB, 32'b100, extImm, signimmsh, alusrcb, srcb );
   mux3 #(32) MuxPCNext( aluresult, aluout, pcjump, pcsrc, pcnext );
