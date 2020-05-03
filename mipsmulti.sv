@@ -133,7 +133,7 @@ module controller(input  logic       clk, reset,
   logic branchAndZero;
 
   // Main Decoder and ALU Decoder subunits.
-  maindec md(clk, reset, op, 
+  maindec md(clk, reset, op,
              pcwrite, memwrite, irwrite, regwrite,
              alusrca, branch, iord, memtoreg, regdst,
              alusrcb, pcsrc, aluop);
@@ -163,6 +163,8 @@ module maindec(input  logic       clk, reset,
   parameter   ADDIEX  = 4'b1001;      // State 9
   parameter   ADDIWB  = 4'b1010;      // state 10
   parameter   JEX     = 4'b1011;      // State 11
+  parameter   ORIEX   = 4'b1100;      // State 12
+  parameter   BNEEX   = 4'b1101;      // State 13
 
   parameter   LW      = 6'b100011;    // Opcode for lw
   parameter   SW      = 6'b101011;    // Opcode for sw
@@ -170,9 +172,12 @@ module maindec(input  logic       clk, reset,
   parameter   BEQ     = 6'b000100;    // Opcode for beq
   parameter   ADDI    = 6'b001000;    // Opcode for addi
   parameter   J       = 6'b000010;    // Opcode for j
+  parameter   BNE     = 6'b000101;    // Opcode for bne
+  parameter   ORI     = 6'b001101;    // Opcode for ori
 
   logic [3:0]  state, nextstate;
   logic [14:0] controls;
+  logic bne;
 
   // state register
   always_ff @(posedge clk or posedge reset)
@@ -196,6 +201,8 @@ module maindec(input  logic       clk, reset,
           BEQ:     nextstate = BEQEX;
           ADDI:    nextstate = ADDIEX;
           J:       nextstate = JEX;
+          ORI:     nextstate = ORIEX;
+          BNE:     nextstate = BNEEX;
           default: nextstate = 4'bx; // should never happen
        	endcase
   /* Add code here  */
@@ -211,7 +218,9 @@ module maindec(input  logic       clk, reset,
       RTYPEEX:      nextstate = RTYPEWB;
       RTYPEWB:      nextstate = FETCH;
       BEQEX:        nextstate = FETCH;
+      BNEEX:        nextstate = FETCH;
       ADDIEX:       nextstate = ADDIWB;
+      ORIEX:        nextstate = ADDIWB;
       ADDIWB:       nextstate = FETCH;
       JEX:          nextstate = FETCH;
       default:      nextstate = 4'bx; // should never happen
@@ -226,7 +235,7 @@ module maindec(input  logic       clk, reset,
     Finish entering the output logic below.
     The output logic for the first two states, S0 and S1, have been completed for you.
   */
-  always_comb
+  always_comb begin
     case(state)
       FETCH:    controls = 15'h5010;
       DECODE:   controls = 15'h0030;
@@ -239,11 +248,18 @@ module maindec(input  logic       clk, reset,
       RTYPEEX:  controls = 15'h0402;
       RTYPEWB:  controls = 15'h0840;
       BEQEX:    controls = 15'h0605;
+      BNEEX:    controls = 15'h0605;  //same as branch, just need to assign bne separately
+      ORIEX:    controls = 15'h0423;  //same as ADDIEX, except just has aluop is 11
       ADDIEX:   controls = 15'h0420;
       ADDIWB:   controls = 15'h0800;
       JEX:      controls = 15'h4008;
       default:  controls = 15'hxxxx; // should never happen
     endcase
+    if ( state == BNEEX )
+      bne = 1;
+    else
+      bne = 0;
+  end
 endmodule
 
 module aludec(input  logic [5:0] funct,
@@ -293,25 +309,67 @@ module datapath(input  logic        clk, reset,
   logic [4:0]  writereg;
   logic [31:0] pcnext, pc;
   logic [31:0] instr, data, srca, srcb;
-  logic [31:0] a;
+  logic [31:0] a;  // is this suppose to be tempA?
   logic [31:0] aluresult, aluout;
   logic [31:0] signimm;   // the sign-extended immediate
   logic [31:0] signimmsh; // the sign-extended immediate shifted left by 2
-  logic [31:0] wd3, rd1, rd2;   // op and funct fields to controller
-
+  logic [31:0] wd3, rd1, rd2;
+  // op and funct fields to controller
   assign op = instr[31:26];
   assign funct = instr[5:0];
 
-/*
-  Your datapath hardware goes below.  Instantiate each of the submodules
-  that you need.  Remember that alu's, mux's and various other
-  versions of parameterizable modules are available in textbook 7.6
-  Here, parameterizable 3:1 and 4:1 muxes are provided below for your use.
-  Remember to give your instantiated modules applicable names
-  such as pcreg (PC register), wdmux (Write Data Mux), etc.
-  so it's easier to understand.
-*/
-  /* ADD DATAPATH CODE HERE */
+  /* new internal stuff we declared */
+  logic [3:0] pcUpper;
+  logic [27:0] jumpshifted;
+  logic [31:0] pcjump;
+  logic [31:0] tempA, tempB; //these are registers
+
+  regfile regFile( clk, regwrite,
+                   instr[25:21], instr[20:16], writereg,
+                   wd3,
+                   rd1, rd2 );
+  /* assignment of the signals we declared */
+  assign pcUpper = pc[31:28];
+  assign jumpshifted = { instr[25:0], 2'b00 };
+  assign pcjump = { pcUpper, jumpshifted };
+  assign writedata = tempB;
+
+  /* making the intermediate registers, only instr and pc have enable signals */
+  always_ff @( posedge clk or posedge reset ) begin
+    if ( reset ) begin
+      instr <= 0;
+      pc <= 0;
+      data <= 0;
+      aluout <= 0;
+      tempA <= 0;
+      tempB <= 0;
+    end
+    else begin
+      data <= readdata;
+      aluout <= aluresult;
+      tempA <= rd1;
+      tempB <= rd2;
+      if ( irwrite )
+        instr <= readdata;
+      else
+        instr <= instr;
+      if ( pcen )
+        pc <= pcnext;
+      else
+        pc <= pc;
+    end
+  end
+
+  alu Alu( srca, srcb, alucontrol, aluresult, zero );
+  signext SignExt( instr[15:0], signimm );
+  sl2 SignExtShifted( signimm, signimmsh );
+
+  mux2 #(32) MuxWriteReg( instr[20:16], instr[15:11], regdst, writereg );
+  mux2 #(32) MuxAdr( pc, aluout, iord, adr );
+  mux2 #(32) MuxWd3( aluout, data, memtoreg ,writereg );
+  mux2 #(32) MuxSrcA( pc, tempA, alusrca, srca );
+  mux4 #(32) MuxSrcB( tempB, 4, signimm, signimmsh, alusrcb );
+  mux3 #(32) MuxPCNext( aluresult, aluout, pcjump, pcsrc, pcnext );
 
 endmodule
 
@@ -623,9 +681,9 @@ module mux4 #(parameter WIDTH = 8)
 
  // Components used in MIPS processor----------------------------------------------------------
 
-module regfile(input  logic        clk, we3, 
-               input  logic [4:0]  ra1, ra2, wa3, 
-               input  logic [31:0] wd3, 
+module regfile(input  logic        clk, we3,
+               input  logic [4:0]  ra1, ra2, wa3,
+               input  logic [31:0] wd3,
                output logic [31:0] rd1, rd2);
 
   logic [31:0] rf[31:0];
@@ -634,7 +692,7 @@ module regfile(input  logic        clk, we3,
   // read two ports combinationally; write third port on rising edge of clock
 
   always_ff @(posedge clk)
-    if (we3) rf[wa3] <= wd3;	
+    if (we3) rf[wa3] <= wd3;
 
   assign rd1 = (ra1 != 0) ? rf[ra1] : 0;
   assign rd2 = (ra2 != 0) ? rf[ra2] : 0;
@@ -654,13 +712,13 @@ endmodule
 
 module signext(input  logic [15:0] a,
                output logic [31:0] y);
-              
+
   assign y = {{16{a[15]}}, a};
 endmodule
 
 module flopr #(parameter WIDTH = 8)
               (input  logic             clk, reset,
-               input  logic [WIDTH-1:0] d, 
+               input  logic [WIDTH-1:0] d,
                output logic [WIDTH-1:0] q);
 
   always_ff @(posedge clk, posedge reset)
@@ -670,18 +728,18 @@ endmodule
 
 module flopenr #(parameter WIDTH = 8)
                 (input  logic             clk, reset, en,
-                 input  logic [WIDTH-1:0] d, 
+                 input  logic [WIDTH-1:0] d,
                  output logic [WIDTH-1:0] q);
- 
+
   always_ff @(posedge clk, posedge reset)
     if      (reset) q <= 0;
     else if (en)    q <= d;
 endmodule
 
 module mux2 #(parameter WIDTH = 8)
-             (input  logic [WIDTH-1:0] d0, d1, 
-              input  logic             s, 
+             (input  logic [WIDTH-1:0] d0, d1,
+              input  logic             s,
               output logic [WIDTH-1:0] y);
 
-  assign y = s ? d1 : d0; 
+  assign y = s ? d1 : d0;
 endmodule
