@@ -368,17 +368,16 @@ module datapath(input  logic        clk, reset,
     end
   end
 
-  alu Alu( srca, srcb, alucontrol, aluresult, zero );
-  signext SignExt( instr[15:0], signimm );
-  sl2 SignExtShifted( signimm, signimmsh );
-
-  mux2 #(32) MuxWriteReg( instr[20:16], instr[15:11], regdst, writereg );
+  mux2 #(5) MuxWriteReg( instr[20:16], instr[15:11], regdst, writereg );
   mux2 #(32) MuxAdr( pc, aluout, iord, adr );
   mux2 #(32) MuxWd3( aluout, data, memtoreg ,writereg );
   mux2 #(32) MuxSrcA( pc, tempA, alusrca, srca );
-  mux4 #(32) MuxSrcB( tempB, 4, extImm, signimmsh, alusrcb );
+  mux4 #(32) MuxSrcB( tempB, 32'b100, extImm, signimmsh, alusrcb, srcb );
   mux3 #(32) MuxPCNext( aluresult, aluout, pcjump, pcsrc, pcnext );
 
+  alu Alu( srca, srcb, alucontrol, aluresult, zero );
+  signext SignExt( instr[15:0], signimm );
+  sl2 SignExtShifted( signimm, signimmsh );
 endmodule
 
 //ALU Portion---------------------------------------------
