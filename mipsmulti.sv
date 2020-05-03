@@ -126,11 +126,7 @@ module controller(input  logic       clk, reset,
                   output logic       pcen, memwrite, irwrite, regwrite,
                   output logic       alusrca, iord, memtoreg, regdst,
                   output logic [1:0] alusrcb, pcsrc,
-                  output logic [2:0] alucontrol,
-		  output logic [3:0] state/*ADDED*/,
-      output logic pcwrite_out/*ADDED*/,
-      output logic [1:0] aluop_out/*ADDED*/,
-      output logic branch_out/*ADDED*/);
+                  output logic [2:0] alucontrol);
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
@@ -140,12 +136,9 @@ module controller(input  logic       clk, reset,
   maindec md(clk, reset, op, 
              pcwrite, memwrite, irwrite, regwrite,
              alusrca, branch, iord, memtoreg, regdst,
-             alusrcb, pcsrc, aluop, state/*ADDED*/);
+             alusrcb, pcsrc, aluop);
   aludec  ad(funct, aluop, alucontrol);
 
-  assign aluop_out = aluop;
-  assign pcwrite_out = pcwrite;/*ADDED*/
-  assign branch_out = branch;
   assign branchAndZero = branch & zero;
   assign pcen = pcwrite | branchAndZero;
 
@@ -156,8 +149,7 @@ module maindec(input  logic       clk, reset,
                 output logic       pcwrite, memwrite, irwrite, regwrite,
                 output logic       alusrca, branch, iord, memtoreg, regdst,
                 output logic [1:0] alusrcb, pcsrc,
-                output logic [1:0] aluop,
-		output logic [3:0] state_out);
+                output logic [1:0] aluop);
   /* States */
   parameter   FETCH   = 4'b0000;      // State 0
   parameter   DECODE  = 4'b0001;      // State 1
@@ -252,8 +244,6 @@ module maindec(input  logic       clk, reset,
       JEX:      controls = 15'h4008;
       default:  controls = 15'hxxxx; // should never happen
     endcase
-//ADDED
-assign state_out = state;
 endmodule
 
 module aludec(input  logic [5:0] funct,
