@@ -130,7 +130,8 @@ module controller(input  logic       clk, reset,
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
-  logic branchAndZero;
+  logic branchCondMet, compResult;
+  logic zeroInvert;
 
   // Main Decoder and ALU Decoder subunits.
   maindec md(clk, reset, op,
@@ -139,8 +140,10 @@ module controller(input  logic       clk, reset,
              alusrcb, pcsrc, aluop);
   aludec  ad(funct, aluop, alucontrol);
 
-  assign branchAndZero = branch & zero;
-  assign pcen = pcwrite | branchAndZero;
+  assign zeroInvert = ~zero;
+  assign compResult = ( op == 6'b001101 ) ? zeroInvert : zero;
+  assign branchCondMet = branch & compResult;
+  assign pcen = pcwrite | branchCondMet;
 
 endmodule
 
@@ -177,7 +180,7 @@ module maindec(input  logic       clk, reset,
 
   logic [3:0]  state, nextstate;
   logic [14:0] controls;
-  logic bne;
+  //logic bne;
 
   // state register
   always_ff @(posedge clk or posedge reset)
@@ -255,10 +258,10 @@ module maindec(input  logic       clk, reset,
       JEX:      controls = 15'h4008;
       default:  controls = 15'hxxxx; // should never happen
     endcase
-    if ( state == BNEEX )
-      bne = 1;
-    else
-      bne = 0;
+    // if ( state == BNEEX )
+    //   bne = 1;
+    // else
+    //   bne = 0;
   end
 endmodule
 
@@ -323,6 +326,7 @@ module datapath(input  logic        clk, reset,
   logic [27:0] jumpshifted;
   logic [31:0] pcjump;
   logic [31:0] tempA, tempB; //these are registers
+  logic [31:0] zeroExtImm, extImm; /* used to get the correct imm value with proper extension for ori */
 
   regfile regFile( clk, regwrite,
                    instr[25:21], instr[20:16], writereg,
@@ -333,6 +337,10 @@ module datapath(input  logic        clk, reset,
   assign jumpshifted = { instr[25:0], 2'b00 };
   assign pcjump = { pcUpper, jumpshifted };
   assign writedata = tempB;
+
+  /* PartC code here to get imm with zero extension for ORI */
+  assign zeroExtImm = { 16'b0, instr[15:0] };
+  assign extImm = ( instr[31:26] == 6'b001101 ) ? zeroExtImm : signimm;
 
   /* making the intermediate registers, only instr and pc have enable signals */
   always_ff @( posedge clk or posedge reset ) begin
@@ -368,7 +376,7 @@ module datapath(input  logic        clk, reset,
   mux2 #(32) MuxAdr( pc, aluout, iord, adr );
   mux2 #(32) MuxWd3( aluout, data, memtoreg ,writereg );
   mux2 #(32) MuxSrcA( pc, tempA, alusrca, srca );
-  mux4 #(32) MuxSrcB( tempB, 4, signimm, signimmsh, alusrcb );
+  mux4 #(32) MuxSrcB( tempB, 4, extImm, signimmsh, alusrcb );
   mux3 #(32) MuxPCNext( aluresult, aluout, pcjump, pcsrc, pcnext );
 
 endmodule
