@@ -141,7 +141,7 @@ module controller(input  logic       clk, reset,
   aludec  ad(funct, aluop, alucontrol);
 
   assign zeroInvert = ~zero;
-  assign compResult = ( op == 6'b001101 ) ? zeroInvert : zero;
+  assign compResult = ( op == 6'b000101 ) ? zeroInvert : zero;
   assign branchCondMet = branch & compResult;
   assign pcen = pcwrite | branchCondMet;
 
